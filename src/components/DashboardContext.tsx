@@ -1,46 +1,46 @@
+import { UserAccessPermission } from '@prisma/client'
+import { KBarProvider } from 'kbar'
 import React, {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
   useEffect,
-  useState,
   useMemo,
-  useCallback,
+  useState,
 } from 'react'
-import { useLocation, useNavigate, Navigate, useParams } from 'react-router-dom'
-import { UserAccessPermission } from '@prisma/client'
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useRecoilState, useRecoilValue } from 'recoil'
+import { dashboardL1Paths } from '~/App'
+import IVButton from '~/components/IVButton'
+import IVSpinner from '~/components/IVSpinner'
+import {
+  PerformLoginRedirect,
+  redirectAfterLogin,
+} from '~/components/LoginRedirect'
+import {
+  DEVELOPMENT_ORG_ENV_SLUG,
+  PRODUCTION_ORG_ENV_SLUG,
+} from '~/utils/environments'
+import { extractOrgSlug } from '~/utils/extractOrgSlug'
+import { useOrgParams } from '~/utils/organization'
+import { hasPermission } from '~/utils/permissions'
 import {
   inferQueryInput,
   inferQueryOutput,
   QueryNames,
   trpc,
 } from '~/utils/trpc'
-import IVButton from '~/components/IVButton'
-import IVSpinner from '~/components/IVSpinner'
+import useHasSession from '~/utils/useHasSession'
+import CommandBar, { DynamicCommandBarActions } from './CommandBar'
+import { consoleUIState } from './Console'
+import DashboardNav from './DashboardNav'
 import { useMe } from './MeContext'
 import NotificationCenter from './NotificationCenter'
-import useHasSession from '~/utils/useHasSession'
-import { hasPermission } from '~/utils/permissions'
-import { useRecoilState, useRecoilValue } from 'recoil'
-import {
-  PerformLoginRedirect,
-  redirectAfterLogin,
-} from '~/components/LoginRedirect'
-import { dashboardL1Paths } from '~/App'
-import { useOrgParams } from '~/utils/organization'
-import { extractOrgSlug } from '~/utils/extractOrgSlug'
-import { KBarProvider } from 'kbar'
-import CommandBar, { DynamicCommandBarActions } from './CommandBar'
-import DashboardNav from './DashboardNav'
-import {
-  DEVELOPMENT_ORG_ENV_SLUG,
-  PRODUCTION_ORG_ENV_SLUG,
-} from '~/utils/environments'
 import ControlPanel, {
   ControlPanelContext,
   ControlPanelProps,
 } from './TransactionUI/_presentation/ControlPanel'
-import { consoleUIState } from './Console'
 
 type PageDataRefreshState =
   | null
@@ -436,7 +436,7 @@ export function DashboardProvider({ children }) {
   if (!defaultSlug) {
     // Shouldn't be possible, malformed user organization access
     return (
-      <ErrorMessage message="You do not have access to any organizations. Please contact help@interval.com." />
+      <ErrorMessage message="You do not have access to any organizations. Please contact bry.nguyen@heyglide.com" />
     )
   }
 

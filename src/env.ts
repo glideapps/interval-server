@@ -1,5 +1,5 @@
-import { z } from 'zod'
 import dotenv from 'dotenv'
+import { z } from 'zod'
 import { logger } from './server/utils/logger'
 
 try {
@@ -21,7 +21,7 @@ const schema = z.object({
 
   // emails
   POSTMARK_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().optional().default('Interval <help@interval.com>'),
+  EMAIL_FROM: z.string().optional().default('Interval <bry.nguyen@heyglide.com>'),
 
   // authentication
   WORKOS_API_KEY: z.string().optional(),

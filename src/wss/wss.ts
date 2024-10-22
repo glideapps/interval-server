@@ -1,95 +1,94 @@
 //@ts-nocheck TODO: Does Jacob know why inputs isn't typed properly?
-import { WebSocketServer } from 'ws'
-import prisma from '../server/prisma'
-import { getClientIp } from 'request-ip'
-import ISocket from '@interval/sdk/dist/classes/ISocket'
 import { DuplexRPCClient } from '@interval/sdk/dist/classes/DuplexRPCClient'
+import ISocket from '@interval/sdk/dist/classes/ISocket'
 import {
   clientSchema,
   hostSchema,
   wsServerSchema,
 } from '@interval/sdk/dist/internalRpcSchema'
 import {
+  SerializableRecord,
   T_IO_METHOD_NAMES,
   T_IO_RENDER,
-  SerializableRecord,
 } from '@interval/sdk/dist/ioSchema'
 import {
-  Prisma,
   ApiKey,
-  Organization,
   HostInstanceStatus,
-  Transaction,
-  SdkAlert,
+  Organization,
   OrganizationEnvironment,
+  Prisma,
+  SdkAlert,
+  Transaction,
   TransactionRequirement,
   TransactionStatus,
 } from '@prisma/client'
+import { getClientIp } from 'request-ip'
+import { WebSocketServer } from 'ws'
 import { completionMessage, completionTitle } from '~/utils/notify'
+import prisma from '../server/prisma'
 
 // I don't think this is true anymore ⬇
 // Imports must be relative and not use aliases for server code
-import {
-  AUTH_COOKIE_NAME,
-  CLIENT_ISOCKET_ID_SEARCH_PARAM_KEY,
-  NODE_SDK_NAME,
-} from '../utils/isomorphicConsts'
-import {
-  unsealSessionCookie,
-  SessionUserData,
-  validateSession,
-  loginWithApiKey,
-} from '../server/auth'
 import env from '~/env'
-import { isBackgroundable } from '../utils/actions'
-import { getQueuedActionParams } from '../utils/queuedActions'
-import { parseActionResult } from '../utils/parseActionResult'
-import { getName, getFullActionSlug } from '../utils/actions'
-import { isGroupSlugValid, isSlugValid } from '../utils/validate'
-import { logger } from '../server/utils/logger'
-import {
-  cancelTransaction,
-  cancelClosedTransactions,
-  freeTransactionCalls,
-  getActionEnvironment,
-  startTransaction,
-} from './transactions'
-import {
-  getCurrentHostInstance,
-  getDashboardUrl,
-} from '../server/utils/transactions'
-import { getStartTransactionUser } from '../utils/user'
-import notify from '../server/utils/notify'
-import { shaHash } from '../server/utils/hash'
+import { DEVELOPMENT_ORG_ENV_SLUG } from '~/utils/environments'
 import { findOrCreateGhostOrg } from '../server/api/auth/ghost'
+import {
+  loginWithApiKey,
+  SessionUserData,
+  unsealSessionCookie,
+  validateSession,
+} from '../server/auth'
+import {
+  getPermissionsWarning,
+  initializeActions,
+} from '../server/utils/actions'
+import { isFlagEnabled } from '../server/utils/featureFlags'
+import { shaHash } from '../server/utils/hash'
 import {
   checkHttpHosts,
   checkNotUnreachableHttpHosts,
   checkUnreachableHttpHosts,
 } from '../server/utils/hosts'
-import { isFlagEnabled } from '../server/utils/featureFlags'
+import { logger } from '../server/utils/logger'
+import notify from '../server/utils/notify'
 import { getSdkAlert } from '../server/utils/sdkAlerts'
-import { scheduleAllExisting } from './actionSchedule'
-import { deleteTransactionUploads } from '../server/utils/uploads'
-import {
-  getPermissionsWarning,
-  initializeActions,
-} from '../server/utils/actions'
 import sleep from '../server/utils/sleep'
 import {
+  getCurrentHostInstance,
+  getDashboardUrl,
+} from '../server/utils/transactions'
+import { deleteTransactionUploads } from '../server/utils/uploads'
+import { getFullActionSlug, getName, isBackgroundable } from '../utils/actions'
+import {
+  AUTH_COOKIE_NAME,
+  CLIENT_ISOCKET_ID_SEARCH_PARAM_KEY,
+  NODE_SDK_NAME,
+} from '../utils/isomorphicConsts'
+import { parseActionResult } from '../utils/parseActionResult'
+import { getQueuedActionParams } from '../utils/queuedActions'
+import { getStartTransactionUser } from '../utils/user'
+import { isGroupSlugValid, isSlugValid } from '../utils/validate'
+import { scheduleAllExisting } from './actionSchedule'
+import {
+  apiKeyHostIds,
   blockedWsIds,
+  connectedClients,
   ConnectedHost,
   connectedHosts,
-  apiKeyHostIds,
-  connectedClients,
-  userClientIds,
   pageSockets,
   pendingIOCalls,
+  ServerRPCClient,
   transactionLoadingStates,
   transactionRedirects,
-  ServerRPCClient,
+  userClientIds,
 } from './processVars'
-import { DEVELOPMENT_ORG_ENV_SLUG } from '~/utils/environments'
+import {
+  cancelClosedTransactions,
+  cancelTransaction,
+  freeTransactionCalls,
+  getActionEnvironment,
+  startTransaction,
+} from './transactions'
 
 const RATE_LIMIT_HISTORY_SIZE = 10
 const RATE_LIMIT_HISTORY_THRESHOLD_LIMIT = 5
@@ -379,7 +378,7 @@ export function setupWebSocketServer(wss: WebSocketServer) {
           )
           ws.close(
             1008,
-            'Rate limit exceeded. Please contact us with questions (help@interval.com).'
+            'Rate limit exceeded. Please contact us with questions (bry.nguyen@heyglide.com).'
           )
         }
       }, 1000)
@@ -405,7 +404,7 @@ export function setupWebSocketServer(wss: WebSocketServer) {
           )
           ws.close(
             1008,
-            'Rate limit exceeded. Please contact us with questions (help@interval.com).'
+            'Rate limit exceeded. Please contact us with questions (bry.nguyen@heyglide.com).'
           )
         }
       })
