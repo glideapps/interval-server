@@ -1,5 +1,40 @@
 # Interval Server
 
+
+## To publish docker changes:
+[Relevant link](https://cloud.google.com/sql/docs/mysql/connect-auth-proxy)
+
+
+1.) Download the Cloud SQL Auth Proxy
+
+```bash
+curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.13.0/cloud-sql-proxy.darwin.arm64
+```
+
+2.) Make the Cloud SQL Auth Proxy executable
+
+```bash
+chmod +x cloud-sql-proxy
+```
+  
+3.) Build docker image from repo's root directory
+
+```bash
+docker build --no-cache .
+```
+
+4.)Tag docker image and push
+
+```bash
+#lists docker images
+    docker ps -a
+
+docker tag [IMAGE_ID] us-central1-docker.pkg.dev/glide-atc-shared/atc-interval/interval-server:latest
+
+docker push us-central1-docker.pkg.dev/glide-atc-shared/atc-interval/interval-server:latest
+```
+
+---
 Interval Server is the central node used to run applications developed with the [Interval SDK](https://github.com/interval/interval-node).
 
 **🚧 Note:** Previously Interval Server was only available as a closed-source cloud service. Now, it is possible to run an instance yourself. This is a new direction for the Interval project and the fully open-source/self-hosted Interval Server application is still in early phases of development. If you encounter an issues setting up an Interval Server instance, please let us know by opening an issue!
