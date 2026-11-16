@@ -6,7 +6,7 @@ import {
   organizationMiddleware,
 } from './util'
 import { hasPermission } from '~/utils/permissions'
-import { checkHttpHost } from '../utils/hosts'
+import { checkHttpHost, HTTP_HOSTS_ENABLED } from '../utils/hosts'
 import { logger } from '~/server/utils/logger'
 
 export const httpHostsRouter = createRouter()
@@ -38,6 +38,13 @@ export const httpHostsRouter = createRouter()
     }) {
       if (!hasPermission(userOrganizationAccess, 'WRITE_PROD_ACTIONS')) {
         throw new TRPCError({ code: 'FORBIDDEN' })
+      }
+
+      if (!HTTP_HOSTS_ENABLED) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'HTTP hosts are disabled on this server.',
+        })
       }
 
       let created = false

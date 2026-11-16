@@ -389,6 +389,19 @@ export const authRouter = createRouter()
         })
       }
 
+      // Glide: this server is for staff only.  Accounts are created from an
+      // invitation and never by open sign-up.  Without an invitation, sign-up
+      // would either create a new organization or, if the email's domain
+      // matches an organization's SSO domain, join that organization, and
+      // the email address is not verified first.
+      if (!invitation) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message:
+            'New user registration is disabled. Ask an administrator for an invitation.',
+        })
+      }
+
       let promoCode: OrganizationPromoCode | null = null
       if (organizationPromoCode) {
         promoCode = await prisma.organizationPromoCode.findFirst({
@@ -514,7 +527,7 @@ export const authRouter = createRouter()
 
       const resetUrl = await createResetUrl(resetToken.id)
 
-      forgotPassword(user.email, { resetUrl })
+      await forgotPassword(user.email, { resetUrl })
     },
   })
   // ********** Endpoints below here require authentication **********

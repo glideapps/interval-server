@@ -10,6 +10,7 @@ import { generatePassword, requestEmailConfirmation } from '~/server/auth'
 import { createUser } from '~/server/user'
 import { hasPermission } from '~/utils/permissions'
 import { logger } from '~/server/utils/logger'
+import { isEmailEnabled } from '../utils/email'
 
 export const userRouter = createRouter()
   .middleware(authenticatedMiddleware)
@@ -94,7 +95,7 @@ export const userRouter = createRouter()
       return user
         ? {
             ...user,
-            isEmailConfirmationRequired: !!pendingConfirmation,
+            isEmailConfirmationRequired: !!pendingConfirmation && isEmailEnabled(),
           }
         : null
     },
@@ -161,10 +162,13 @@ export const userRouter = createRouter()
       ctx: { userOrganizationAccess },
       input: { organizationId, ...input },
     }) {
+      // Glide: always require an organization the caller can manage users
+      // in.  Without one, any signed-in user could create an account for
+      // any email address.
       if (
-        organizationId &&
-        (userOrganizationAccess.organizationId !== organizationId ||
-          !hasPermission(userOrganizationAccess, 'WRITE_USERS'))
+        !organizationId ||
+        userOrganizationAccess.organizationId !== organizationId ||
+        !hasPermission(userOrganizationAccess, 'WRITE_USERS')
       ) {
         throw new TRPCError({ code: 'FORBIDDEN' })
       }

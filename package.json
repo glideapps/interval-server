@@ -1,10 +1,10 @@
 {
   "name": "@interval/server",
   "description": "Interval Server is the central server for Interval apps",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "license": "MIT",
   "engines": {
-    "node": ">=16"
+    "node": ">=24.22.1"
   },
   "prisma": {
     "seed": "ts-node --project tsconfig.server.json -r tsconfig-paths/register prisma/seed.ts"
@@ -22,7 +22,7 @@
     "build": "rm -rf dist && prisma generate && yarn server:build && yarn wss:build && yarn client:build",
     "pkg": "./scripts/pkg.sh",
     "pub": "./scripts/pub.sh",
-    "start": "NODE_ENV=production ./dist/src/entry.js",
+    "start": "NODE_ENV=production node ./dist/src/entry.js",
     "docker": "./scripts/docker-build.sh",
     "client:build": "vite build",
     "client:clean": "rm -r node_modules/.vite",

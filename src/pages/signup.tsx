@@ -1,8 +1,5 @@
-import classNames from 'classnames'
-import { Field, Form, Formik } from 'formik'
-import { DateTime } from 'luxon'
 import { useState } from 'react'
-import { Helmet } from 'react-helmet-async'
+import { Field, Form, Formik } from 'formik'
 import {
   Link,
   Navigate,
@@ -10,16 +7,19 @@ import {
   useNavigate,
   useSearchParams,
 } from 'react-router-dom'
-import AuthPageHeader from '~/components/AuthPageHeader'
-import IVButton from '~/components/IVButton'
-import IVInputField from '~/components/IVInputField'
-import IVSpinner from '~/components/IVSpinner'
-import GoogleIcon from '~/icons/compiled/Google'
-import { tryLogin } from '~/utils/auth'
-import { REFERRAL_LOCAL_STORAGE_KEY } from '~/utils/isomorphicConsts'
-import { ReferralInfo, referralInfoSchema } from '~/utils/referralSchema'
+import { Helmet } from 'react-helmet-async'
 import { inferMutationInput, trpc } from '~/utils/trpc'
+import IVInputField from '~/components/IVInputField'
+import IVButton from '~/components/IVButton'
+import { tryLogin } from '~/utils/auth'
 import useHasSession from '~/utils/useHasSession'
+import IVSpinner from '~/components/IVSpinner'
+import classNames from 'classnames'
+import { ReferralInfo, referralInfoSchema } from '~/utils/referralSchema'
+import GoogleIcon from '~/icons/compiled/Google'
+import { DateTime } from 'luxon'
+import AuthPageHeader from '~/components/AuthPageHeader'
+import { REFERRAL_LOCAL_STORAGE_KEY } from '~/utils/isomorphicConsts'
 
 export default function SignupPage() {
   const [hasLoginError, setHasLoginError] = useState(false)
@@ -106,10 +106,10 @@ export default function SignupPage() {
               <p className="mt-2">
                 Please reach out to
                 <a
-                  href="mailto:bry.nguyen@heyglide.com"
+                  href="mailto:help@interval.com"
                   className="font-medium hover:opacity-70"
                 >
-                  bry.nguyen@heyglide.com
+                  help@interval.com
                 </a>
                 with any questions or if you think this is a mistake.
               </p>

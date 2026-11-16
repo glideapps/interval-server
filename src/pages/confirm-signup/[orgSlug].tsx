@@ -1,19 +1,20 @@
 import { Field, Form, Formik } from 'formik'
-import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import AuthLoadingState from '~/components/AuthLoadingState'
-import AuthPageHeader from '~/components/AuthPageHeader'
-import IVAPIError from '~/components/IVAPIError'
-import IVButton from '~/components/IVButton'
-import IVInputField from '~/components/IVInputField'
-import { REFERRAL_LOCAL_STORAGE_KEY } from '~/utils/isomorphicConsts'
-import { useOrgParams } from '~/utils/organization'
-import { ReferralInfo, referralInfoSchema } from '~/utils/referralSchema'
 import { inferMutationInput, trpc } from '~/utils/trpc'
+import IVInputField from '~/components/IVInputField'
+import IVButton from '~/components/IVButton'
+import { ReferralInfo, referralInfoSchema } from '~/utils/referralSchema'
+import IVCheckbox from '~/components/IVCheckbox'
+import AuthLoadingState from '~/components/AuthLoadingState'
+import IVAPIError from '~/components/IVAPIError'
 import {
   ORG_SLUG_CONSTRAINTS,
   validateOrgSlugChange,
 } from '../dashboard/[orgSlug]/organization/settings'
+import { useOrgParams } from '~/utils/organization'
+import { useState } from 'react'
+import AuthPageHeader from '~/components/AuthPageHeader'
+import { REFERRAL_LOCAL_STORAGE_KEY } from '~/utils/isomorphicConsts'
 
 export default function ConfirmSignupPage() {
   const { orgSlug } = useOrgParams()
@@ -179,10 +180,10 @@ export default function ConfirmSignupPage() {
                             Sorry, we were unable to finish setting up your
                             account. Please reach out to{' '}
                             <a
-                              href="mailto:bry.nguyen@heyglide.com"
+                              href="mailto:help@interval.com"
                               className="font-medium hover:opacity-70"
                             >
-                              bry.nguyen@heyglide.com
+                              help@interval.com
                             </a>
                             .
                           </>

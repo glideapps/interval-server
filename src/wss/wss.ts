@@ -1,94 +1,95 @@
 //@ts-nocheck TODO: Does Jacob know why inputs isn't typed properly?
-import { DuplexRPCClient } from '@interval/sdk/dist/classes/DuplexRPCClient'
+import { WebSocketServer } from 'ws'
+import prisma from '../server/prisma'
+import { getClientIp } from 'request-ip'
 import ISocket from '@interval/sdk/dist/classes/ISocket'
+import { DuplexRPCClient } from '@interval/sdk/dist/classes/DuplexRPCClient'
 import {
   clientSchema,
   hostSchema,
   wsServerSchema,
 } from '@interval/sdk/dist/internalRpcSchema'
 import {
-  SerializableRecord,
   T_IO_METHOD_NAMES,
   T_IO_RENDER,
+  SerializableRecord,
 } from '@interval/sdk/dist/ioSchema'
 import {
-  ApiKey,
-  HostInstanceStatus,
-  Organization,
-  OrganizationEnvironment,
   Prisma,
-  SdkAlert,
+  ApiKey,
+  Organization,
+  HostInstanceStatus,
   Transaction,
+  SdkAlert,
+  OrganizationEnvironment,
   TransactionRequirement,
   TransactionStatus,
 } from '@prisma/client'
-import { getClientIp } from 'request-ip'
-import { WebSocketServer } from 'ws'
 import { completionMessage, completionTitle } from '~/utils/notify'
-import prisma from '../server/prisma'
 
 // I don't think this is true anymore ⬇
 // Imports must be relative and not use aliases for server code
-import env from '~/env'
-import { DEVELOPMENT_ORG_ENV_SLUG } from '~/utils/environments'
-import { findOrCreateGhostOrg } from '../server/api/auth/ghost'
-import {
-  loginWithApiKey,
-  SessionUserData,
-  unsealSessionCookie,
-  validateSession,
-} from '../server/auth'
-import {
-  getPermissionsWarning,
-  initializeActions,
-} from '../server/utils/actions'
-import { isFlagEnabled } from '../server/utils/featureFlags'
-import { shaHash } from '../server/utils/hash'
-import {
-  checkHttpHosts,
-  checkNotUnreachableHttpHosts,
-  checkUnreachableHttpHosts,
-} from '../server/utils/hosts'
-import { logger } from '../server/utils/logger'
-import notify from '../server/utils/notify'
-import { getSdkAlert } from '../server/utils/sdkAlerts'
-import sleep from '../server/utils/sleep'
-import {
-  getCurrentHostInstance,
-  getDashboardUrl,
-} from '../server/utils/transactions'
-import { deleteTransactionUploads } from '../server/utils/uploads'
-import { getFullActionSlug, getName, isBackgroundable } from '../utils/actions'
 import {
   AUTH_COOKIE_NAME,
   CLIENT_ISOCKET_ID_SEARCH_PARAM_KEY,
   NODE_SDK_NAME,
 } from '../utils/isomorphicConsts'
-import { parseActionResult } from '../utils/parseActionResult'
+import {
+  unsealSessionCookie,
+  SessionUserData,
+  validateSession,
+  loginWithApiKey,
+} from '../server/auth'
+import env from '~/env'
+import { isBackgroundable } from '../utils/actions'
 import { getQueuedActionParams } from '../utils/queuedActions'
-import { getStartTransactionUser } from '../utils/user'
+import { parseActionResult } from '../utils/parseActionResult'
+import { getName, getFullActionSlug } from '../utils/actions'
 import { isGroupSlugValid, isSlugValid } from '../utils/validate'
-import { scheduleAllExisting } from './actionSchedule'
+import { logger } from '../server/utils/logger'
 import {
-  apiKeyHostIds,
-  blockedWsIds,
-  connectedClients,
-  ConnectedHost,
-  connectedHosts,
-  pageSockets,
-  pendingIOCalls,
-  ServerRPCClient,
-  transactionLoadingStates,
-  transactionRedirects,
-  userClientIds,
-} from './processVars'
-import {
-  cancelClosedTransactions,
   cancelTransaction,
+  cancelClosedTransactions,
   freeTransactionCalls,
   getActionEnvironment,
   startTransaction,
 } from './transactions'
+import {
+  getCurrentHostInstance,
+  getDashboardUrl,
+} from '../server/utils/transactions'
+import { getStartTransactionUser } from '../utils/user'
+import notify from '../server/utils/notify'
+import { shaHash } from '../server/utils/hash'
+import { findOrCreateGhostOrg } from '../server/api/auth/ghost'
+import {
+  checkHttpHosts,
+  checkNotUnreachableHttpHosts,
+  checkUnreachableHttpHosts,
+} from '../server/utils/hosts'
+import { isFlagEnabled } from '../server/utils/featureFlags'
+import { getSdkAlert } from '../server/utils/sdkAlerts'
+import { scheduleAllExisting } from './actionSchedule'
+import { deleteTransactionUploads } from '../server/utils/uploads'
+import {
+  getPermissionsWarning,
+  initializeActions,
+} from '../server/utils/actions'
+import sleep from '../server/utils/sleep'
+import {
+  blockedWsIds,
+  ConnectedHost,
+  connectedHosts,
+  apiKeyHostIds,
+  connectedClients,
+  userClientIds,
+  pageSockets,
+  pendingIOCalls,
+  transactionLoadingStates,
+  transactionRedirects,
+  ServerRPCClient,
+} from './processVars'
+import { DEVELOPMENT_ORG_ENV_SLUG } from '~/utils/environments'
 
 const RATE_LIMIT_HISTORY_SIZE = 10
 const RATE_LIMIT_HISTORY_THRESHOLD_LIMIT = 5
@@ -378,7 +379,7 @@ export function setupWebSocketServer(wss: WebSocketServer) {
           )
           ws.close(
             1008,
-            'Rate limit exceeded. Please contact us with questions (bry.nguyen@heyglide.com).'
+            'Rate limit exceeded. Please contact us with questions (help@interval.com).'
           )
         }
       }, 1000)
@@ -404,7 +405,7 @@ export function setupWebSocketServer(wss: WebSocketServer) {
           )
           ws.close(
             1008,
-            'Rate limit exceeded. Please contact us with questions (bry.nguyen@heyglide.com).'
+            'Rate limit exceeded. Please contact us with questions (help@interval.com).'
           )
         }
       })
@@ -2740,12 +2741,20 @@ export function setupWebSocketServer(wss: WebSocketServer) {
               },
             })
 
-            // delete development host instance
-            await prisma.hostInstance.delete({
-              where: {
-                id: ws.id,
-              },
-            })
+            // A present entry here means a reconnect with the same ws.id has
+            // already re-registered; the DB row now belongs to that connection.
+            if (connectedHosts.has(ws.id)) {
+              logger.info(
+                'Skipping HostInstance delete; reconnect already re-registered',
+                { instanceId: ws.id }
+              )
+            } else {
+              await prisma.hostInstance.delete({
+                where: {
+                  id: ws.id,
+                },
+              })
+            }
           } else {
             inProgressTransactions = await prisma.transaction.findMany({
               where: {
@@ -2762,14 +2771,23 @@ export function setupWebSocketServer(wss: WebSocketServer) {
               data: { status: 'HOST_CONNECTION_DROPPED' },
             })
 
-            try {
-              await prisma.hostInstance.delete({
-                where: { id: ws.id },
-              })
-            } catch (error) {
-              // swallow these in development to allow for cleaning up test data
-              if (process.env.NODE_ENV === 'production') {
-                throw error
+            // A present entry here means a reconnect with the same ws.id has
+            // already re-registered; the DB row now belongs to that connection.
+            if (connectedHosts.has(ws.id)) {
+              logger.info(
+                'Skipping HostInstance delete; reconnect already re-registered',
+                { instanceId: ws.id }
+              )
+            } else {
+              try {
+                await prisma.hostInstance.delete({
+                  where: { id: ws.id },
+                })
+              } catch (error) {
+                // swallow these in development to allow for cleaning up test data
+                if (process.env.NODE_ENV === 'production') {
+                  throw error
+                }
               }
             }
           }
