@@ -1,0 +1,67 @@
+name: Build and deploy
+
+# Builds the server image and deploys it to the interval-main Cloud Run service.
+# Runs on every push to main, or by hand from the Actions tab.
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+
+# Never run two deploys at once; a newer push waits for the running one.
+concurrency:
+    group: deploy-interval-main
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+env:
+    PROJECT: glide-atc-shared
+    REGION: us-central1
+    SERVICE: interval-main
+    IMAGE: us-central1-docker.pkg.dev/glide-atc-shared/atc-interval/interval-server
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        # Only deploy from main, even if the workflow is dispatched on another branch.
+        if: github.ref == 'refs/heads/main'
+        environment: production
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Authenticate to Google Cloud
+              uses: google-github-actions/auth@v2
+              with:
+                  credentials_json: ${{ secrets.GCP_DEPLOY_SA_KEY }}
+
+            - uses: google-github-actions/setup-gcloud@v2
+
+            - name: Configure Docker for Artifact Registry
+              run: gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+
+            - uses: docker/setup-buildx-action@v3
+
+            - name: Build and push
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  platforms: linux/amd64
+                  push: true
+                  tags: ${{ env.IMAGE }}:${{ github.sha }}
+
+            # Changes only the image. Environment variables, secrets and the
+            # Cloud SQL connection stay as configured on the service.
+            - name: Deploy to Cloud Run
+              run: |
+                  gcloud run services update "$SERVICE" \
+                      --project "$PROJECT" \
+                      --region "$REGION" \
+                      --image "$IMAGE:${{ github.sha }}"
+
+            - name: Show the serving revision
+              run: |
+                  gcloud run services describe "$SERVICE" \
+                      --project "$PROJECT" \
+                      --region "$REGION" \
+                      --format='value(status.latestReadyRevisionName,status.url)'
