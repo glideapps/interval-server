@@ -157,13 +157,22 @@ export default function emailSender<T extends TemplateData>(
 
     logger.info(`> Sending "${message.subject}" to ${message.to}`)
 
-    const response = await postmark.sendEmail({
-      From: message.from,
-      To: message.to,
-      Subject: message.subject,
-      HtmlBody: message.html,
-    })
+    // Glide: some callers don't await this, so a rejected send became an
+    // unhandled rejection that exited the process.  An unauthenticated
+    // forgot-password request for an address Postmark refuses was enough to
+    // restart the server.  Log the failure and report it as "not sent".
+    try {
+      const response = await postmark.sendEmail({
+        From: message.from,
+        To: message.to,
+        Subject: message.subject,
+        HtmlBody: message.html,
+      })
 
-    return { response, html: message.html }
+      return { response, html: message.html }
+    } catch (error) {
+      logger.error('Mailer: failed to send email', { to: message.to, error })
+      return undefined
+    }
   }
 }

@@ -162,10 +162,13 @@ export const userRouter = createRouter()
       ctx: { userOrganizationAccess },
       input: { organizationId, ...input },
     }) {
+      // Glide: always require an organization the caller can manage users
+      // in.  Without one, any signed-in user could create an account for
+      // any email address.
       if (
-        organizationId &&
-        (userOrganizationAccess.organizationId !== organizationId ||
-          !hasPermission(userOrganizationAccess, 'WRITE_USERS'))
+        !organizationId ||
+        userOrganizationAccess.organizationId !== organizationId ||
+        !hasPermission(userOrganizationAccess, 'WRITE_USERS')
       ) {
         throw new TRPCError({ code: 'FORBIDDEN' })
       }

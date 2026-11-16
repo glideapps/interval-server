@@ -21,7 +21,10 @@ const schema = z.object({
 
   // emails
   POSTMARK_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().optional().default('Interval <help@interval.com>'),
+  EMAIL_FROM: z
+    .string()
+    .optional()
+    .default('Interval <bry.nguyen@heyglide.com>'),
 
   // authentication
   WORKOS_API_KEY: z.string().optional(),
