@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Field, Form, Formik, useFormikContext } from 'formik'
-import { UserAccessGroup, UserAccessPermission } from '@prisma/client'
+import { UserAccessGroup } from '@prisma/client'
 import { trpc, inferQueryOutput, inferMutationInput } from '~/utils/trpc'
 import IVInputField from '~/components/IVInputField'
 import IVButton from '~/components/IVButton'
@@ -72,7 +72,9 @@ export default function UsersPage() {
 
 interface AddUserFormState
   extends Omit<inferMutationInput<'organization.add-user'>, 'permissions'> {
-  role: UserAccessPermission
+  // Glide: the server only accepts a subset of UserAccessPermission here, so
+  // the full enum doesn't type-check and the build fails.
+  role: inferMutationInput<'organization.add-user'>['permissions'][number]
 }
 
 function AddUserDialog({
